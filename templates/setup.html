@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProfessAI - 초기 설정</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1923; --card: #1a2332; --border: #2a3a4a;
+            --text: #e8eaed; --dim: #8899aa; --accent: #4fc3f7;
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .setup-container { max-width: 560px; width: 100%; padding: 20px; }
+        .setup-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 40px; }
+        .logo { text-align: center; margin-bottom: 32px; }
+        .logo i { font-size: 3rem; color: var(--accent); margin-bottom: 12px; display: block; }
+        .logo h1 { font-size: 1.6rem; font-weight: 800; margin: 0; }
+        .logo p { color: var(--dim); font-size: .85rem; margin-top: 8px; }
+        .form-label { font-size: .8rem; color: var(--dim); font-weight: 500; }
+        .form-control { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+        .form-control:focus { background: var(--bg); color: var(--text); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,195,247,.15); }
+        .form-control::placeholder { color: rgba(136,153,170,.5); }
+        .btn-start { background: linear-gradient(135deg, #1a237e, #0d47a1); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 1rem; font-weight: 700; width: 100%; transition: opacity .2s; }
+        .btn-start:hover { opacity: .9; color: #fff; }
+        .btn-start:disabled { opacity: .5; }
+        .step-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #000; font-size: .7rem; font-weight: 800; margin-right: 8px; }
+        .help-link { color: var(--accent); font-size: .75rem; text-decoration: none; }
+        .help-link:hover { text-decoration: underline; color: var(--accent); }
+        .section-divider { border-top: 1px solid var(--border); margin: 24px 0; position: relative; }
+        .section-divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--card); padding: 0 12px; font-size: .75rem; color: var(--dim); }
+        .alert-result { border-radius: 10px; font-size: .85rem; }
+        .collapse-toggle { cursor: pointer; font-size: .8rem; color: var(--dim); }
+        .collapse-toggle:hover { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-card">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <h1>ProfessAI</h1>
+                <p>한국투자증권 API 키만 입력하면 바로 시작됩니다</p>
+            </div>
+
+            <form id="setupForm" onsubmit="return saveConfig(event)">
+                <!-- 필수 입력 -->
+                <div class="mb-3">
+                    <label class="form-label"><span class="step-badge">1</span>APP KEY (실전투자)</label>
+                    <input type="text" class="form-control" id="appKey" placeholder="한국투자증권에서 발급받은 앱키" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><span class="step-badge">2</span>APP SECRET (실전투자)</label>
+                    <input type="password" class="form-control" id="appSecret" placeholder="한국투자증권에서 발급받은 시크릿키" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><span class="step-badge">3</span>계좌번호 (앞 8자리)</label>
+                    <input type="text" class="form-control" id="accountNo" placeholder="예: 50012345" maxlength="8" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">계좌 상품코드</label>
+                    <select class="form-control" id="accountProd">
+                        <option value="01">01 - 종합계좌 (일반)</option>
+                        <option value="22">22 - 연금저축</option>
+                        <option value="29">29 - 퇴직연금</option>
+                    </select>
+                </div>
+
+                <!-- 모의투자 (선택) -->
+                <div class="section-divider"><span>선택사항</span></div>
+                <div class="collapse-toggle mb-2" data-bs-toggle="collapse" data-bs-target="#paperSection">
+                    <i class="fas fa-caret-right" id="paperCaret"></i> 모의투자 설정 (선택)
+                </div>
+                <div class="collapse" id="paperSection">
+                    <div class="mb-3">
+                        <label class="form-label">모의투자 APP KEY</label>
+                        <input type="text" class="form-control" id="paperApp" placeholder="(선택)">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">모의투자 APP SECRET</label>
+                        <input type="password" class="form-control" id="paperSec" placeholder="(선택)">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">모의투자 계좌번호</label>
+                        <input type="text" class="form-control" id="paperAcct" placeholder="(선택)" maxlength="8">
+                    </div>
+                </div>
+
+                <div id="resultArea" class="mb-3" style="display:none;"></div>
+
+                <button type="submit" class="btn-start" id="btnSave">
+                    <i class="fas fa-rocket"></i> 시작하기
+                </button>
+            </form>
+
+            <div style="text-align:center;margin-top:20px;">
+                <a href="https://apiportal.koreainvestment.com" target="_blank" class="help-link">
+                    <i class="fas fa-external-link-alt"></i> 한국투자증권 API 포털에서 키 발급받기
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('paperSection').addEventListener('show.bs.collapse', () => {
+            document.getElementById('paperCaret').className = 'fas fa-caret-down';
+        });
+        document.getElementById('paperSection').addEventListener('hide.bs.collapse', () => {
+            document.getElementById('paperCaret').className = 'fas fa-caret-right';
+        });
+
+        async function saveConfig(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSave');
+            const result = document.getElementById('resultArea');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 인증 확인 중...';
+            result.style.display = 'none';
+
+            const payload = {
+                app_key: document.getElementById('appKey').value.trim(),
+                app_secret: document.getElementById('appSecret').value.trim(),
+                account_no: document.getElementById('accountNo').value.trim(),
+                account_prod: document.getElementById('accountProd').value,
+                paper_app: document.getElementById('paperApp').value.trim(),
+                paper_sec: document.getElementById('paperSec').value.trim(),
+                paper_acct: document.getElementById('paperAcct').value.trim(),
+            };
+
+            try {
+                const res = await fetch('/api/save-config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                result.style.display = 'block';
+                if (data.ok) {
+                    result.innerHTML = `<div class="alert alert-success alert-result"><i class="fas fa-check-circle"></i> ${data.message}<br>잠시 후 대시보드로 이동합니다...</div>`;
+                    setTimeout(() => { window.location.href = '/'; }, 1500);
+                } else {
+                    result.innerHTML = `<div class="alert alert-danger alert-result"><i class="fas fa-exclamation-triangle"></i> ${data.error}</div>`;
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-rocket"></i> 다시 시도';
+                }
+            } catch (err) {
+                result.style.display = 'block';
+                result.innerHTML = `<div class="alert alert-danger alert-result">서버 연결 실패: ${err.message}</div>`;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-rocket"></i> 다시 시도';
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>

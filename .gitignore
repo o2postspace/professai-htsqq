@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+kis_devlp.yaml
+ohlcv_data/
+ohlcv_kosdaq/
+test_ohlcv/
+*.mst
+*.xlsx
+*.rda
+*.zip
+.vercel/
