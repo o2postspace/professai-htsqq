@@ -41,26 +41,36 @@
             <div class="logo">
                 <i class="fas fa-chart-line"></i>
                 <h1>ProfessAI</h1>
+                {% if config_locked %}
+                <p>이 서버는 웹에서 API 키 저장이 비활성화되어 있습니다</p>
+                {% else %}
                 <p>한국투자증권 API 키만 입력하면 바로 시작됩니다</p>
+                {% endif %}
             </div>
 
             <form id="setupForm" onsubmit="return saveConfig(event)">
+                {% if config_locked %}
+                <div class="alert alert-warning alert-result mb-3">
+                    서버 배포 환경에서는 설정 저장이 잠겨 있습니다.<br>
+                    `GitHub Secrets` 또는 서버의 `.env.production`에 KIS 값을 넣어주세요.
+                </div>
+                {% endif %}
                 <!-- 필수 입력 -->
                 <div class="mb-3">
                     <label class="form-label"><span class="step-badge">1</span>APP KEY (실전투자)</label>
-                    <input type="text" class="form-control" id="appKey" placeholder="한국투자증권에서 발급받은 앱키" required>
+                    <input type="text" class="form-control" id="appKey" placeholder="한국투자증권에서 발급받은 앱키" required {% if config_locked %}disabled{% endif %}>
                 </div>
                 <div class="mb-3">
                     <label class="form-label"><span class="step-badge">2</span>APP SECRET (실전투자)</label>
-                    <input type="password" class="form-control" id="appSecret" placeholder="한국투자증권에서 발급받은 시크릿키" required>
+                    <input type="password" class="form-control" id="appSecret" placeholder="한국투자증권에서 발급받은 시크릿키" required {% if config_locked %}disabled{% endif %}>
                 </div>
                 <div class="mb-3">
                     <label class="form-label"><span class="step-badge">3</span>계좌번호 (앞 8자리)</label>
-                    <input type="text" class="form-control" id="accountNo" placeholder="예: 50012345" maxlength="8" required>
+                    <input type="text" class="form-control" id="accountNo" placeholder="예: 50012345" maxlength="8" required {% if config_locked %}disabled{% endif %}>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">계좌 상품코드</label>
-                    <select class="form-control" id="accountProd">
+                    <select class="form-control" id="accountProd" {% if config_locked %}disabled{% endif %}>
                         <option value="01">01 - 종합계좌 (일반)</option>
                         <option value="22">22 - 연금저축</option>
                         <option value="29">29 - 퇴직연금</option>
@@ -75,22 +85,26 @@
                 <div class="collapse" id="paperSection">
                     <div class="mb-3">
                         <label class="form-label">모의투자 APP KEY</label>
-                        <input type="text" class="form-control" id="paperApp" placeholder="(선택)">
+                        <input type="text" class="form-control" id="paperApp" placeholder="(선택)" {% if config_locked %}disabled{% endif %}>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">모의투자 APP SECRET</label>
-                        <input type="password" class="form-control" id="paperSec" placeholder="(선택)">
+                        <input type="password" class="form-control" id="paperSec" placeholder="(선택)" {% if config_locked %}disabled{% endif %}>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">모의투자 계좌번호</label>
-                        <input type="text" class="form-control" id="paperAcct" placeholder="(선택)" maxlength="8">
+                        <input type="text" class="form-control" id="paperAcct" placeholder="(선택)" maxlength="8" {% if config_locked %}disabled{% endif %}>
                     </div>
                 </div>
 
                 <div id="resultArea" class="mb-3" style="display:none;"></div>
 
-                <button type="submit" class="btn-start" id="btnSave">
+                <button type="submit" class="btn-start" id="btnSave" {% if config_locked %}disabled{% endif %}>
+                    {% if config_locked %}
+                    <i class="fas fa-lock"></i> 서버에서 비활성화됨
+                    {% else %}
                     <i class="fas fa-rocket"></i> 시작하기
+                    {% endif %}
                 </button>
             </form>
 
@@ -113,6 +127,9 @@
 
         async function saveConfig(e) {
             e.preventDefault();
+            {% if config_locked %}
+            return false;
+            {% endif %}
             const btn = document.getElementById('btnSave');
             const result = document.getElementById('resultArea');
             btn.disabled = true;

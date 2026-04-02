@@ -22,19 +22,24 @@ import numpy as np
 import pandas as pd
 import requests as http_requests
 from datetime import datetime, timedelta
-from flask import Flask, render_template, jsonify, request, redirect
+from flask import Flask, render_template, jsonify, request
+from runtime_config import (
+    BASE_DIR,
+    CONFIG_FILE,
+    ENV_FILE,
+    FLASK_SECRET_KEY,
+    OHLCV_DIR,
+    WEB_CONFIG_ENABLED,
+    ensure_parent_dir,
+)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # ============================================================
 # Flask 앱 설정
 # ============================================================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
-app.secret_key = "professai_stock_2026"
-
-CONFIG_FILE = os.path.join(BASE_DIR, "kis_devlp.yaml")
-ENV_FILE = os.path.join(BASE_DIR, ".env")
+app.secret_key = FLASK_SECRET_KEY
 
 # 전역 캐시
 _cache = {
@@ -152,6 +157,7 @@ def save_config(app_key, app_secret, account_no, account_prod='01',
     if paper_acct:
         config['my_paper_stock'] = paper_acct
 
+    ensure_parent_dir(CONFIG_FILE)
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
@@ -163,6 +169,7 @@ def save_config(app_key, app_secret, account_no, account_prod='01',
         f"KIS_ACCOUNT_PRODUCT={account_prod or '01'}",
         "KIS_SVR=prod",
     ]
+    ensure_parent_dir(ENV_FILE)
     with open(ENV_FILE, 'w') as f:
         f.write('\n'.join(env_lines) + '\n')
 
@@ -288,11 +295,6 @@ def score_stock(df):
 # ============================================================
 # 로컬 CSV 로딩 (API 호출 최소화)
 # ============================================================
-OHLCV_DIR = os.environ.get("OHLCV_DIR", os.path.join(BASE_DIR, "ohlcv_data"))
-if not os.path.isabs(OHLCV_DIR):
-    OHLCV_DIR = os.path.join(BASE_DIR, OHLCV_DIR)
-
-
 def load_ohlcv_csv(stock_code, days=200):
     """
     로컬 CSV에서 OHLCV 데이터 로딩 (API 호출 없이).
@@ -654,17 +656,22 @@ def run_analysis():
 @app.route('/')
 def index():
     if not is_configured():
-        return render_template('setup.html')
+        return render_template('setup.html', config_locked=not WEB_CONFIG_ENABLED)
     return render_template('dashboard.html')
 
 
 @app.route('/setup')
 def setup_page():
-    return render_template('setup.html')
+    return render_template('setup.html', config_locked=not WEB_CONFIG_ENABLED)
 
 
 @app.route('/api/save-config', methods=['POST'])
 def api_save_config():
+    if not WEB_CONFIG_ENABLED:
+        return jsonify({
+            "ok": False,
+            "error": "서버 배포 환경에서는 웹 설정 저장이 비활성화되어 있습니다. GitHub Secrets 또는 .env.production으로 설정하세요.",
+        }), 403
     try:
         d = request.json
         save_config(

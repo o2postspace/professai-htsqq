@@ -8,16 +8,17 @@ import requests
 import yaml
 from datetime import datetime
 from dotenv import load_dotenv
+from runtime_config import CONFIG_FILE, ENV_FILE
 
 # .env 파일 로드
-load_dotenv()
+load_dotenv(dotenv_path=ENV_FILE)
 
 def load_config():
     """설정 파일 로드 (YAML 우선, 없으면 .env)"""
     config = {}
     
     # YAML 파일 먼저 시도
-    yaml_file = "kis_devlp.yaml"
+    yaml_file = CONFIG_FILE
     if os.path.exists(yaml_file):
         try:
             with open(yaml_file, 'r', encoding='utf-8') as f:
@@ -250,4 +251,3 @@ def get_auth():
         _kis_auth = KISAuth()
         _kis_auth.get_access_token()
     return _kis_auth
-
