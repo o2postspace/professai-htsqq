@@ -1,0 +1,47 @@
+services:
+  web:
+    image: ${IMAGE_NAME:-professai:latest}
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_CONFIG_DIR: /app/runtime/config
+      APP_CONFIG_FILE: /app/runtime/config/kis_devlp.yaml
+      APP_ENV_FILE: /app/runtime/config/.env
+      KIS_TOKEN_DIR: /app/runtime/tokens
+      OHLCV_DIR: /app/runtime/ohlcv
+      WEB_CONFIG_ENABLED: ${WEB_CONFIG_ENABLED:-false}
+    ports:
+      - "${APP_PORT:-8050}:8050"
+    volumes:
+      - ./data/config:/app/runtime/config
+      - ./data/tokens:/app/runtime/tokens
+      - ./data/ohlcv:/app/runtime/ohlcv
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8050/', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  updater:
+    image: ${IMAGE_NAME:-professai:latest}
+    build:
+      context: .
+    profiles:
+      - manual
+    env_file:
+      - .env
+    environment:
+      APP_CONFIG_DIR: /app/runtime/config
+      APP_CONFIG_FILE: /app/runtime/config/kis_devlp.yaml
+      APP_ENV_FILE: /app/runtime/config/.env
+      KIS_TOKEN_DIR: /app/runtime/tokens
+      OHLCV_DIR: /app/runtime/ohlcv
+    volumes:
+      - ./data/config:/app/runtime/config
+      - ./data/tokens:/app/runtime/tokens
+      - ./data/ohlcv:/app/runtime/ohlcv
+    command: ["python", "update_ohlcv.py", "--output", "/app/runtime/ohlcv"]
